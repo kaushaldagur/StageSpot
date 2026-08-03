@@ -1,120 +1,257 @@
-# StageSpot — Get Your First Stage
+# StageSpot
 
-A hyperlocal web platform connecting first-time and hobbyist performers (musicians, poets, comedians) with small cafes and restaurants hosting live open-mic-style performances. Launching in the Delhi region.
+StageSpot is a full-stack web platform that connects performers with cafés, restaurants, and venues looking to host live performances. It enables venues to post gigs, performers to apply, and both parties to manage bookings, profiles, and feedback through a secure and intuitive workflow.
+
+---
 
 ## Features
 
-- **Authentication** — email/password via Supabase Auth with email verification, forgot/reset password, role selection (Performer or Venue) at sign-up, required Terms & Conditions acceptance
-- **Admin verification** — every performer and venue profile is reviewed by an admin (proof links, portfolio, social presence, address) and approved or rejected with a reason before they can post or apply to gigs
-- **Profiles** — public performer/venue pages with unique IDs, ratings, performance history, reviews, "Already worked with" indicators, and verification badges
-- **Gigs & bookings** — venues post gigs; performers apply; bookings move through `requested → accepted → confirmed → completed` with `declined`/`cancelled` branches; bookings auto-complete once the gig date passes
-- **Privacy gating** — the venue's exact address and contact information stay hidden until a booking is **confirmed**
-- **Feedback** — after completion both sides leave a 1–5 star rating, written comment, and reputation tags; profile averages update automatically via database triggers
-- **Area-based filtering** — Haversine distance filtering/sorting of gigs from the user's venue location or geolocation (Delhi localities)
-- **AI-assisted search** — describe the vibe in plain text ("moody, acoustic, late-night energy"); the system expands it into act types/keywords and returns matching verified performers. Uses Google Gemini when `GEMINI_API_KEY` is set (falls back to the Anthropic API via `ANTHROPIC_API_KEY`, then to a built-in keyword/category heuristic — the feature works with no key at all)
-- **Admin dashboard** — verification queue plus platform-wide views of all gigs, bookings, and reviews
-- **Responsive** — mobile-first per the provided wireframes; on desktop (≥1024px) navigation moves into the header, feeds become multi-column grids, the Explore masonry gains columns, and the AI search sheet becomes a centered dialog
+### Authentication & Authorization
 
-## Tech stack
+- Secure email/password authentication using Supabase Auth
+- Email verification
+- Forgot password and password reset
+- Role-based registration (Performer or Venue)
+- Terms & Conditions acceptance during signup
 
-Next.js (App Router) + Tailwind CSS · Supabase (Postgres, Auth, Storage, RLS) · Vercel-ready
+### Performer & Venue Profiles
 
-## Prerequisites
+- Create and manage performer or venue profiles
+- Portfolio links and social media integration
+- Verification workflow with approval and rejection status
+- Public profile pages with ratings and reviews
+- Performance history and verification badges
 
-- Node.js 18+
-- A Supabase project (with the new-style API keys: publishable + secret)
-- Supabase CLI (for applying migrations): `brew install supabase/tap/supabase`
+### Gig Management
 
-## Setup
+- Venues can create and manage performance opportunities
+- Performers can browse and apply for gigs
+- Booking lifecycle including:
+  - Requested
+  - Accepted
+  - Confirmed
+  - Completed
+  - Declined
+  - Cancelled
+- Automatic completion of bookings after the event date
+
+### Privacy Controls
+
+- Venue contact information and address remain hidden until a booking is confirmed
+- Secure access to sensitive information using Row Level Security (RLS)
+
+### Reviews & Ratings
+
+- Two-way review system between performers and venues
+- 1–5 star ratings
+- Written feedback
+- Reputation tags
+- Automatic profile rating updates using PostgreSQL triggers
+
+### Search & Discovery
+
+- Browse performers and gigs
+- Filter opportunities by category and locality
+- Distance-based search using the Haversine formula
+- Natural language performer search with optional Gemini AI support and keyword-based fallback
+
+### Administration
+
+- Admin dashboard for profile verification
+- Manage performers and venues
+- Review gigs and bookings
+- Moderate platform activity
+
+### Responsive Design
+
+- Mobile-first responsive interface
+- Optimized layouts for tablets and desktop devices
+
+---
+
+# Tech Stack
+
+### Frontend
+
+- Next.js (App Router)
+- React
+- TypeScript
+- Tailwind CSS
+
+### Backend
+
+- Next.js API Routes
+- Supabase
+
+### Database
+
+- PostgreSQL
+- Row Level Security (RLS)
+
+### Authentication
+
+- Supabase Auth
+
+### Storage
+
+- Supabase Storage
+
+### AI Integration
+
+- Google Gemini API (optional)
+- Automatic keyword-based fallback when no API key is configured
+
+### Deployment
+
+- Vercel
+
+---
+
+# Installation
+
+Clone the repository
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/your-username/stagespot.git
+
+cd stagespot
+```
+
+Install dependencies
+
+```bash
 npm install
+```
 
-# 2. Configure environment
-cp .env.example .env       # then fill in the values (see below)
+Copy the environment file
 
-# 3. Apply database migrations (schema, RLS, triggers, storage bucket)
-supabase link --project-ref <your-project-ref>
-supabase db push --include-all
+```bash
+cp .env.example .env.local
+```
 
-# 4. Seed sample data (optional — see Database seeding below)
+Update the environment variables.
+
+Run database migrations
+
+```bash
+supabase db push
+```
+
+(Optional) Seed demo data
+
+```bash
 node scripts/seed-database.js
-
-# 5. Run locally
-npm run dev                # http://localhost:3000
 ```
 
-## Environment variables (see `.env.example`)
+Start the development server
 
-| Variable | Purpose |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project API URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key (`sb_publishable_…`), safe for the browser |
-| `SUPABASE_SECRET_KEY` | Secret key (`sb_secret_…`), server-side only — used by API routes and scripts |
-| `SUPABASE_JWKS_URL` | JWKS endpoint for token verification |
-| `NEXT_PUBLIC_API_URL` | Base URL of the app |
-| `ANTHROPIC_API_KEY` | Optional — enables Claude-powered AI search expansion |
-
-## Project structure
-
-```
-src/
-  app/
-    page.tsx                     # Landing page
-    terms/                       # Terms and Conditions
-    auth/                        # signup, login, verify-email, forgot/reset password
-    app/                         # signed-in app (mobile-first, desktop-adaptive)
-      home/                      # feed with Performers/Gigs toggle + AI search FAB
-      explore/                   # masonry grid, category + distance filters
-      gigs/new, gigs/[id]        # post a gig (verified venues), gig detail/apply
-      performer/[id], venue/[id] # public profiles
-      bookings/                  # status tracker, [id]/confirm (lifecycle actions), [id]/feedback
-      profile/                   # my profile + setup/performer, setup/venue
-    admin/dashboard/             # verification queue + all gigs/bookings/reviews
-    api/search/                  # AI-assisted search endpoint
-    api/preview/                 # landing-page "This week nearby" data
-  components/                    # UI building blocks (SegmentedControl, FeedCard, ImageUpload, …)
-  utils/db.ts                    # data layer (all Supabase queries)
-  utils/auth.ts, geo.ts          # auth helpers, Haversine distance
-supabase/migrations/             # schema, RLS policies, rating triggers, storage bucket
-scripts/seed-database.js         # sample data seeder
-scripts/set-admin.js             # grant/revoke admin for an account
+```bash
+npm run dev
 ```
 
-## Pages ↔ PRD Section 6
+The application will be available at
 
-All 18 screens are implemented: Landing, Home, Explore, Sign Up, Login, Email Verification, Performer Setup, Venue Setup, Performer Profile, Venue Profile, Post a Gig, Gig/Performer Detail, My Bookings, Booking Confirmation, Feedback & Rating, My Profile (edit), Admin Dashboard, Terms & Conditions — plus `/auth/reset-password` for the password-reset flow.
+```
+http://localhost:3000
+```
 
-## Test credentials
+---
 
-All test accounts use the password `TestPassword123!`
+# Environment Variables
 
-| Role | Email | Notes |
-|---|---|---|
-| Admin | `admin@stagespot.test` | Lands on the admin dashboard after login |
-| Performer (approved) | `performer1@stagespot.test` | Arjun Sharma — has ratings/reviews |
-| Performer (approved) | `performer2@stagespot.test` | Priya Patel — comedy |
-| Performer (pending) | `performer4@stagespot.test` | Neha Singh — in the admin queue |
-| Performer (rejected) | `performer5@stagespot.test` | Rajesh Kumar — with rejection reason |
-| Venue (approved) | `venue1@stagespot.test` | The Coffee Lounge |
-| Venue (approved) | `venue2@stagespot.test` | The Stage Hauz Khas |
-| Venue (pending) | `venue3@stagespot.test` | Dil Se Restaurant — in the admin queue |
-| Venue (real, approved) | `venue5..venue8@stagespot.test` | Depot48, Light Room, The Piano Man Jazz Club, Buddy On Stage |
-| Venue (real, pending) | `venue4`, `venue9@stagespot.test` | Unplugged Courtyard, The Social House — in the admin queue |
+Create a `.env.local` file.
 
-To grant admin to another account: `node scripts/set-admin.js <email>` (roles live in the `user_roles` table — the database source of truth; admin rows can only be created server-side).
+```env
+NEXT_PUBLIC_SUPABASE_URL=
 
-## Database seeding
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 
-`node scripts/seed-database.js` creates 5 performers, 3 venues, 4 gigs, bookings in all six lifecycle states, and reviews. Auth users must exist first (create them in the Supabase dashboard or with the emails above).
+SUPABASE_SECRET_KEY=
 
-`node --env-file=.env scripts/seed-real-venues.js` seeds the six real Delhi venues from the provided `stagespot-seed-data-template.xlsx` (PRD Section 9: hand-entered launch venues). It creates the auth accounts itself and is safe to re-run. The two venues whose template notes ask for verification before adding are seeded as `pending` for the admin queue.
+SUPABASE_JWKS_URL=
 
-## Known limitations & next steps
+NEXT_PUBLIC_API_URL=
 
-- **Performer location**: the PRD's performer profile has no address field, so "performers near a venue" ranking has no data to rank on; distance filtering applies to gigs (venues have coordinates). Adding an optional locality to performer profiles would enable it.
-- **Venue → performer direct invite** creates no special flow; the Invite button routes the venue to gig posting, and performers apply from there.
-- **AI search** runs on a keyword/category heuristic until an `ANTHROPIC_API_KEY` is provided.
-- **Email delivery** uses Supabase's built-in sender; configure a custom SMTP provider for production volumes.
-- **Address→coordinate conversion** uses a curated Delhi-locality lookup rather than a geocoding API (per launch scope).
+GEMINI_API_KEY=
+
+ANTHROPIC_API_KEY=
+```
+
+---
+
+# Project Structure
+
+```
+src
+│
+├── app
+│   ├── auth
+│   ├── admin
+│   ├── api
+│   └── app
+│
+├── components
+│
+├── utils
+│
+└── styles
+
+supabase
+│
+└── migrations
+
+scripts
+```
+
+---
+
+# Demo Accounts
+
+The project includes sample accounts for testing.
+
+| Role | Email |
+|-------|-----------------------------|
+| Admin | admin@stagespot.test |
+| Performer | performer1@stagespot.test |
+| Performer | performer2@stagespot.test |
+| Venue | venue1@stagespot.test |
+| Venue | venue2@stagespot.test |
+
+Password
+
+```
+TestPassword123!
+```
+
+---
+
+# Database
+
+The database schema is managed using Supabase migrations.
+
+```bash
+supabase db push
+```
+
+Optional sample data can be inserted using
+
+```bash
+node scripts/seed-database.js
+```
+
+---
+
+# Future Improvements
+
+- Direct venue invitations for performers
+- Enhanced recommendation system
+- Real-time notifications
+- Calendar integration
+- Location autocomplete using Maps APIs
+- Custom email provider for production
+
+---
+
+# License
+
+This project is intended for educational and portfolio purposes.
